@@ -1,0 +1,224 @@
+---
+css: bootstrap.css
+---
+
+```{r include=F}
+options(width=120)
+knitr::opts_chunk$set(echo=T,class.source="well",class.output="quote",comment=NA,fig.width=12)
+
+suppressPackageStartupMessages({
+  library(xml2)
+  library(rvest)
+  library(data.table)
+  library(scales)
+  library(ggplot2)
+  library(grid)
+  library(gridExtra)
+  library(ggmap)
+  library(ggnetwork)
+  library(viridis)
+  library(ggrepel)
+  library(showtext)
+})
+
+family <- "Open Sans"
+font_add_google(family,family)
+if (.Platform$OS.type=="windows")
+  windowsFonts("Open Sans"=windowsFont("Open Sans"))
+
+showtext_auto()
+
+load("data/tables.RData")
+load("data/plots.RData")
+```
+
+<font face="Roboto Mono" size=20>Resident Analysis</font>
+
+<b>Nicolas Ampuero 12/10/18</b>
+
+### A look at local electronic music scenes
+
+The many expressions of electronic music make for a space that can be difficult to navigate, but that is also intriguing in its complexity. This anaysis attempts to give a broad picture of club scenes in different parts of the world, how they are trending over time, and how they are connected and similar to each other. It's by no means exhaustive, nor without gaps or flaws. Rather it's just a starting point in providing context (through data) to live electronic music anywhere in the world.
+
+Skip the data prep and jump to the [analysis](#analysis)
+
+<hr>
+
+## The data
+
+Most of the data used for this analysis is from [Resident Advisor](https://www.residentadvisor.net/) (RA), the go-to source for electronic music news, reviews and event listings. The latter connects music and artists to phycial locations and club goers so is really at the crux of the analysis. While an excellent centralized source of information, RA doesn't have an API and event listings are user submitted so web scraping and cleaning/formatting are required. This creates some limitations in how the data is linked, and is somewhat prone to error, but mostly just adds preprocessing steps.
+
+More structured are artist genre data from [Spotify](https://developer.spotify.com/), location data from [Google Maps](https://developers.google.com/maps/documentation/), and population data from the [World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)
+
+### Building the database
+
+The general outline is as follows:
+
+* Get list of clubs where top 1,000 artists (per RA's annual user survey) perform
+* Get details about each of those clubs (address, capacity, etc)
+* Get list of recent (some years) events at each club
+* Get location attributes for each club
+* Get artist details (genres, popularity, etc)
+
+With all these sets, we should get a sense of how scenes differ and how they're evolving over time. There is a lot more that can be explored, e.g. stats on local DJs and the clubs that haven't hosted DJs in the top 1,000, or pricing of events, but even with a more limited scope we can gather quite a few insights.
+
+
+### Scraping RA
+
+The process for scraping web pages is made fairly straightforward with the <em>rvest</em> package: get XML from a URL, extract specific elements, and format. CSS tags are easily mapped to visual outputs on the page using [Selector Gadget](https://chrome.google.com/webstore/detail/selectorgadget/mhjhnkcfbdhnjickkkdbjoemdmbfginb)
+
+```{r}
+page <- read_html("https://www.residentadvisor.net/dj.aspx")
+node <- html_nodes(page,".pr8 a")
+artist <- data.table(name=html_text(node),href=unlist(html_attrs(node)))
+artist <- unique(artist[grepl("/dj/",href) & name!=""])
+head(artist,3)
+```
+
+This process is repeated for the next few bullets in the outline above, though as we loop through more and more pages - 1k artists, >6k clubs they perform at, >300k events at each - it obviously takes an increasing amount of time to run and there are some additional formatting and mapping steps in between. It's important to take this into account when allotting time to build/update the database.
+
+<em>Note: some of the clubs' event listing pages are formatted in one way - each year gets its own page - others in another, presumably based on importance or number of events listed, but without knowing which is which ahead of time, some of the looping over event pages is overkill</em>
+
+The clean datases already contain quite a bit of useful information
+
+```{r}
+head(club,3)
+head(event,3)
+```
+
+### Querying Spotify & Google
+
+The Spotify API [artist endpoint](https://developer.spotify.com/documentation/web-api/reference/artists/get-artist/) adds another layer by offering genre mapping to each artist. Unfortunately matches aren't always unique or exact so we can apply some logic to keep only the most likely artist based on genre occurence across all artists
+
+```{r eval=F}
+genre[,count:=.N,name]
+genre[,likely:=count>10]
+genre[,score:=mean(likely),.(artist,artistName)]
+setorder(genre,artist,-score)
+genre[,keep:=artistName==artistName[1],artist]
+genre <- genre[which(keep)]
+```
+```{r}
+head(genre,3)
+```
+
+Finally, the Google [Geocoding API](https://developers.google.com/maps/documentation/geocoding/start) codifies the addresses listed on RA. While much of the legwork is done by Google, it's not trivial to define the boundary of "local" so instead we can use a simple spatial cluster to group clubs that are within a certain distance from each other (in this case 10km)
+
+```{r eval=F}
+km <- rdist.earth(geo[,.(lng,lat)],miles=F,R=6371)
+cluster <- hclust(as.dist(km),method="single")
+geo[,cluster:=cutree(clust,h=10)]
+geo[,count:=.N,cluster]
+geo[,cluster:=as.numeric(reorder(cluster,-count,max))] # label clusters in order of total number of clubs
+```
+```{r}
+head(geo,3)
+```
+
+<hr>
+
+## Analyzing the data {#analysis}
+
+### Top down
+
+Before focusing in on local scenes, we can orient ourselves with a view of the global landscape and the pervasiveness of electronic music in each country. To that end, both number of top artists from each country and number of clubs in each country can serve as useful indicators (with rectangle area proportional to total count, and color/text representing count per 10 million residents)
+
+```{r echo=F, fig.width=8, fig.height=4}
+do.call(grid.arrange,list(treeArtists,treeClubs,nrow=1))
+```
+
+As maybe expected, the UK, Germany and the Netherlands are clearly outsized hubs, but Switzerland, Belgium, and Ireland also punch above their weight in terms of clubs per capita. A somewhat surprising insight is that Australia has more clubs per capita than Spain, Italy or France. Digging into the largest movers year over year, we can see that Australia holds that spot even despite a slight drop in the number of clubs per capita. Croatia, on the other hand, has really exploded over the paste few years - no surprise there either to insiders and followers of electornic music.
+
+```{r echo=F, fig.width=6, fig.height=4}
+slopeCountry
+```
+
+It's important to note, however, that these figures are really proxies because some clubs may not list on RA (anymore) but could very well be operating and thriving. And while interesting, these regional views aren't all that useful and hide some of the local richness where live music is actually experienced.
+
+### Putting clubs on a map
+
+Defining the geographic extent and density of the music scene in a given city is an obvious first cut at the local level. With a clear map, we can gauge the popularity of electronic music in an area and identify neighborhood hot spots
+
+```{r echo=F, fig.height=8}
+do.call(grid.arrange,c(mapPoint,mapDensity,list(nrow=2)))
+```
+
+London shows a clear corridor with high density of clubs stretching North from Old Street/Shoreditch, while New York has a few, more isolated, concentrations around Williamsburg and Bushwick in Brooklyn the Lower East Side in Manhattan. Berlin too has a string of clubs along the Spree starting from Friedrichshain-Kreuzberg. These neighborhoods are all well known in the industry, but it's both nice that we can corroborate that institutional knowledge with data and that we can apply this methodology to any city with listings on RA
+
+At the level of an individual location/club, we can get a sense of relative importance by scoring each based on number of listings and average attendence
+
+```{r eval=F}
+cols <- c("events","top","attending")
+location <- club[which(year==max(year)),lapply(.SD,sum,na.rm=T),.(cluster,label,lat,lng),.SDcols=cols]
+location[,attending:=ceiling(ifelse(events==0,0,attending/events))]
+location[,score:=events*log(pmax(2,attending),10)]
+```
+
+Then, by sizing points on the map by the above defined score, we can see whether a small number of clubs "dominate" the scene (again, at least from the perspective of RA listings)
+
+```{r echo=F, fig.height=6}
+do.call(grid.arrange,c(mapScore,list(nrow=1)))
+```
+
+Here, Manchester has a high percentage of clubs with lots of listings (and high average attendance) whereas Rome has only a few, though still a high number of clubs overall.
+
+### Ranking cities around the world
+
+We can also add a rough label to each cluster by assigning a Google geo tag that best approximates a city or metro area based on number of clubs with that label. Here's how the top 20 clusters by club count stack up in 2018
+
+```{r echo=F, results="asis"}
+top20 <- scene[which(cluster<=20),.(cluster,region,clubs,events,top,attending)]
+setnames(top20,c("Cluster","City/Area","Clubs","Total Events","w/ Top Artists","Avg Attendance"))
+knitr::kable(top20)
+```
+
+### How local scenes evolve
+
+Another interesting cut shows both how local scenes grow (or shrink) over time and the seasonal variability of events within the year. Here, "top" events are defined as events with at least one DJ in the top 1,000
+
+```{r echo=F, fig.height=8}
+do.call(grid.arrange,c(barMonthly,list(ncol=1)))
+```
+
+The seasonal nature of the scene in Illes Balears, i.e. Ibiza in this case, is immediately obvious, but so is the growth of events with top DJs. This could be, at least partially, due to how event listings are changing over time (big name events increasingly listed on RA), or could actually reflect a larger trend of more blockbuster events on the island. San Francisco on the other hand has no real seasonality, but seems to be growing pretty steadily as a scene.
+
+### Signature sounds
+
+Drilling down even further, we can explore what type of electronic music each club tends to showcase. Genres are assigned to clubs based on event listings on each artist's page, and frequency of occurence defines relative tendency towards certain genres. Keep in mind that Spotify skews towards the specific with respect to its genre labels, so in order to remove some of the noise, only the top genres for each club are shown
+
+```{r echo=F, fig.width=6, fig.height=6}
+radioGenre
+```
+
+All 3 top clubs (by listing score) favor the popular genres of Techno, Tech House, and Deep House, but while Output (Brooklyn NY) layers in House sub-genres and Detroit Techno, Sugar Factory keeps it varied with more Minimal, Dub, and Bass.
+
+Even more interesting is how clubs in a geographic cluster are linked by genres. Genres and clubs at the center of a network make up the "core" of the scene, while those on the outskirts are more unique relative to the rest of the scene.
+
+```{r echo=F, fig.height=12}
+netGenre
+```
+
+Sugar Factory, in fact, is well within the "mainstream" of Amsterdam's electronic scene since it's not alone in featuring Techno and Tech House. Melkweg, though, is more on the "fringe" because not many other top clubs there play Jungle and Drum & Bass. Barcelona has a similar core, but favors more Deep, Funky and Melodic sounds on the outer rim. 
+
+This cut is probably the most useful for exploring new scenes around the world and the data really does allow us to apply the same logic anywhere (provided there are listings).
+
+Lastly, by aggregating these datasets and including the temporal axis, we can see the evolution of RA's genre landscape over time
+
+```{r echo=F, fig.width=6, fig.height=6}
+areaGenre
+```
+
+It's interesting how fewer genres have come to dominate the events, with the "Rest" of genres halving over 5 years. This isn't just lazingness in tagging events because of how genres are assigned. Instead it signals a trend towards homogenization of event lineups.
+
+<hr>
+
+## Last bits
+
+### What's next
+
+Adding interactivity to this analysis is a logical next step, allowing for the ability to delve into scenes that are relevant to the user (as a local or maybe as a visitor). This is actually made fairly easy thanks to [Shiny](http://shiny.rstudio.com/) so may not be far off. Another facet that would be intresting to explore is developing a recommendation engine based on user preferences: say you like a specific club, could we find other clubs in the area (or around the world) like it based on genres, popularity, location etc. This is a bit more involved, but also very possible with all the data that's already been gathered.
+
+### Final word
+
+My hope is that with more context we can better understand the social experience of music, help develop our local scenes in better ways, and demystify scenes we don't know. This analysis is just one avenue to provide that context and hopefully a nudge to get out there and really live it.
+
