@@ -38,7 +38,7 @@ load("data/plots.RData")
 
 ### A look at local electronic music scenes
 
-The many expressions of electronic music make for a space that can be difficult to navigate, but that is also intriguing in its complexity. This anaysis attempts to give a broad picture of club scenes in different parts of the world, how they are trending over time, and how they are connected and similar to each other. It's by no means exhaustive, nor without gaps or flaws. Rather it's just a starting point in providing context (through data) to live electronic music anywhere in the world.
+The many expressions of electronic music make for a space that can be difficult to navigate, but that is also intriguing in its complexity. This anaysis attempts to give those with some interest in better undertanding the space (and those just keen on practical analysis) a broad picture of club scenes in different parts of the world, how they are trending over time, and how they are connected and similar to each other. It's by no means exhaustive, nor without gaps or flaws. Rather it's just a starting point in providing context through data to the experience of live electronic music anywhere.
 
 Skip the data prep and jump to the [analysis](#analysis)
 
@@ -49,6 +49,8 @@ Skip the data prep and jump to the [analysis](#analysis)
 Most of the data used for this analysis is from [Resident Advisor](https://www.residentadvisor.net/) (RA), the go-to source for electronic music news, reviews and event listings. The latter connects music and artists to phycial locations and club goers so is really at the crux of the analysis. While an excellent centralized source of information, RA doesn't have an API and event listings are user submitted so web scraping and cleaning/formatting are required. This creates some limitations in how the data is linked, and is somewhat prone to error, but mostly just adds preprocessing steps.
 
 More structured are artist genre data from [Spotify](https://developer.spotify.com/), location data from [Google Maps](https://developers.google.com/maps/documentation/), and population data from the [World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)
+
+All code and data used for this project are on [Github](https://github.com/ampu3ro/RA/)
 
 ### Building the database
 
@@ -208,7 +210,7 @@ Lastly, by aggregating these datasets and including the temporal axis, we can se
 areaGenre
 ```
 
-It's interesting how fewer genres have come to dominate the events, with the "Rest" of genres halving over 5 years. This isn't just lazingness in tagging events because of how genres are assigned. Instead it signals a trend towards homogenization of event lineups.
+It's interesting how fewer genres have come to dominate the events, with the "Rest" of genres halving over 5 years. This isn't just laziness in tagging events since genres are assigned by artists listed. Instead it seems to signal a larger trend towards homogenization of event lineups, which could indicate a maturing of the scene as a whole.
 
 <hr>
 
