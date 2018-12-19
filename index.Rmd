@@ -36,9 +36,15 @@ load("data/plots.RData")
 
 <b>Nicolas Ampuero 12/10/18</b>
 
+My first experience with live electronic music was at Electric Daisy Carnival back in 2009 at the LA Colisseum. It was wild, it was free, it was truly momentous. Booming sounds made waves of extacy in a sea of colors. DJs orchestrated ebbs and flows of emotion with little more than a flick of the wrist. Scantily clad revelers were swept into states of trance. Like countless others, I was awash in blissful awe.
+
+I've been chasing that elevated state ever since. And while I know I'll never feel the same wonder and amazement I felt in that neon ocean of happiness, I've had the great fortune of spending many days and nights transported into other worlds experiencing energy and connectedness like I'd never imagined. 
+
+I hope others will embark on that journey too and that some of the context provided in the analysis below will serve as a guide along the way. To those that have traveled the immensity of the experience, I hope this can be a colourful map of treasures found. It's data analysis at the end of the day, but it's born out of the inspiration and joy that live music brings.
+
 ### A look at local electronic music scenes
 
-The many expressions of electronic music make for a space that can be difficult to navigate, but that is also intriguing in its complexity. This anaysis attempts to give those with some interest in better undertanding the space (and those just keen on practical analysis) a broad picture of club scenes in different parts of the world, how they are trending over time, and how they are connected and similar to each other. It's by no means exhaustive, nor without gaps or flaws. Rather it's just a starting point in providing context through data to the experience of live electronic music anywhere.
+The many expressions of electronic music make for a space that can be difficult to navigate, but that is also intriguing in its complexity. This anaysis attempts to paint a broad picture of local club scenes in different parts of the world, how they are trending over time, and how they are connected and similar to each other. It's by no means exhaustive, nor without gaps or flaws. Rather it's just a starting point in providing context through data to the real-life experience.
 
 Skip the data prep and jump to the [analysis](#analysis)
 
