@@ -1,5 +1,9 @@
 ---
 css: bootstrap.css
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
 ---
 
 ```{r include=F}
@@ -36,11 +40,11 @@ load("data/plots.RData")
 
 <b>Nicolas Ampuero 12/10/18</b>
 
-The first time I fully experienced live electronic music was at Electric Daisy Carnival back in 2009 at the LA Colisseum. It was wild, free, truly momentous. Booming sounds made waves of extacy in a sea of colors. DJs orchestrated ebbs and flows of emotion with little more than a flick of the wrist. Scantily clad revelers were swept into states of trance. Like countless others, I was awash in blissful awe.
+The first time I fully experienced live electronic music was at Electric Daisy Carnival back in 2009 at the LA Colisseum. It was loud, colorful, wild, free, truly momentous. It felt like a real cultural moment and like so many others there, I was in awe.
 
-I've been chasing that elevated state ever since. And while I know I'll never feel the same wonder and amazement I felt in that neon ocean of happiness, I've had the great fortune of spending many days and nights transported into other worlds experiencing energy and connectedness like I'd never imagined. 
+I've been chasing that elevated state ever since. And while I know I'll never feel the same wonder and amazement I felt in that neon ocean of happiness, I've had the great fortune of spending many days and nights transported into other worlds experiencing self-discovery and connectedness like I'd never imagined.
 
-I hope others will embark on that journey too and that some of the context provided in the analysis below will serve as a guide along the way. To those that have traveled the immensity of the experience, I hope this can be a colourful map of treasures found. It's just data analysis at the end of the day, but it's born out of the inspiration and joy that live music brought me.
+I hope others will embark on that journey too and that some of the context provided in the analysis below will serve as a guide along the way, or at least a fun new way of thinking about th experience. It's just data analysis at the end of the day, but it's born out of the inspiration and joy that live music brought me.
 
 ### A look at local electronic music scenes
 
